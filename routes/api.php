@@ -11,8 +11,8 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanc
 
 // Partially protected Expense routes
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/expenses', [ExpenseController::class, 'store']); // Text input like "Food - 300"
-    Route::get('/expenses', [ExpenseController::class, 'index']);  // Get list of expenses
+    Route::post('/expenses', [ExpenseController::class, 'store']);
+    Route::get('/expenses', [ExpenseController::class, 'index']);
     Route::post('/expenses/screenshot', [ExpenseController::class, 'uploadScreenshot']);
     Route::post('/expenses/audio', [ExpenseController::class, 'uploadAudio']);
     Route::post('/expenses/video', [ExpenseController::class, 'uploadVideo']);

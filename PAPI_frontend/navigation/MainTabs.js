@@ -1,9 +1,11 @@
+// navigation/MainTabs.js
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomeScreen from '../screens/HomeScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import BudgetScreen from '../screens/BudgetScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import ChatScreen from '../screens/ChatScreen';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 
 const Tab = createBottomTabNavigator();
@@ -21,6 +23,8 @@ export default function MainTabs() {
             return <Ionicons name="wallet-outline" size={size} color={color} />;
           } else if (route.name === 'Profile') {
             return <FontAwesome name="user" size={size} color={color} />;
+          } else if (route.name === 'Chat') {
+            return <Ionicons name="chatbubble-ellipses" size={size} color={color} />;
           }
         },
         tabBarActiveTintColor: '#F7B801',
@@ -28,10 +32,11 @@ export default function MainTabs() {
         headerShown: false,
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ title: ' HomeTab' }} />
-      <Tab.Screen name="History" component={HistoryScreen} options={{ title: ' HistoryTab' }} />
-      <Tab.Screen name="Budget" component={BudgetScreen} options={{ title: ' Budget' }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: ' Profile' }} />
+      <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Home' }} />
+      <Tab.Screen name="History" component={HistoryScreen} options={{ title: 'History' }} />
+      <Tab.Screen name="Budget" component={BudgetScreen} options={{ title: 'Budget' }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
+      <Tab.Screen name="Chat" component={ChatScreen} options={{ title: 'Chat' }} />
     </Tab.Navigator>
   );
 }

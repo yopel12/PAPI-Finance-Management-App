@@ -1,65 +1,82 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+// screens/BudgetScreen.js
+
+import React, { useContext } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  SafeAreaView,
+} from 'react-native';
 import { FontAwesome5, MaterialIcons, Entypo } from '@expo/vector-icons';
+import { ExpenseContext } from '../context/ExpenseContext';
 
 export default function BudgetScreen() {
+  const expenseContext = useContext(ExpenseContext) || {};
+  const {
+    getBudgetTotals = () => ({ Food: 0, Bills: 0, Rent: 0, Others: 0 }),
+  } = expenseContext;
+
+  const totals = getBudgetTotals();
+
   return (
-    <ScrollView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerText}>Budget</Text>
-      </View>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container}>
+        {/* ─── Header ─────────────────────────────────────────── */}
+        <View style={styles.header}>
+          <Text style={styles.headerText}>Budget</Text>
+        </View>
 
-      {/* Title Section */}
-      <View style={styles.section}>
-        <Text style={styles.title}>Automatic Budgeting</Text>
-        <Text style={styles.subtitle}>Auto-allocates funds into categories</Text>
-      </View>
+        {/* ─── Description ───────────────────────────────────── */}
+        <View style={styles.section}>
+          <Text style={styles.title}>Automatic Budgeting</Text>
+          <Text style={styles.subtitle}>
+            Allocates based on your expense logs
+          </Text>
+        </View>
 
-      {/* Amount */}
-      <View style={styles.amountBox}>
-        <Text style={styles.amountLabel}>Amount</Text>
-        <Text style={styles.amountValue}>PHP 5,000</Text>
-      </View>
+        {/* ─── Category Totals ───────────────────────────────── */}
+        <View style={styles.category}>
+          <FontAwesome5 name="utensils" size={20} />
+          <Text style={styles.categoryLabel}>Food</Text>
+          <Text style={styles.categoryAmount}>₱{totals.Food}</Text>
+        </View>
 
-      {/* Category Boxes */}
-      <TouchableOpacity style={styles.category}>
-        <FontAwesome5 name="utensils" size={20} />
-        <Text style={styles.categoryLabel}>Food</Text>
-        <Text style={styles.categoryAmount}>₱1,000</Text>
-      </TouchableOpacity>
+        <View style={styles.category}>
+          <MaterialIcons name="payments" size={20} />
+          <Text style={styles.categoryLabel}>Bills</Text>
+          <Text style={styles.categoryAmount}>₱{totals.Bills}</Text>
+        </View>
 
-      <TouchableOpacity style={styles.category}>
-        <MaterialIcons name="payments" size={20} />
-        <Text style={styles.categoryLabel}>Bills</Text>
-        <Text style={styles.categoryAmount}>₱1,500</Text>
-      </TouchableOpacity>
+        <View style={styles.category}>
+          <Entypo name="home" size={20} />
+          <Text style={styles.categoryLabel}>Rent</Text>
+          <Text style={styles.categoryAmount}>₱{totals.Rent}</Text>
+        </View>
 
-      <TouchableOpacity style={styles.category}>
-        <Entypo name="home" size={20} />
-        <Text style={styles.categoryLabel}>Rent</Text>
-        <Text style={styles.categoryAmount}>₱1,200</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.category}>
-        <Text style={styles.categoryIcon}>＋</Text>
-        <Text style={styles.categoryLabel}>Others</Text>
-        <Text style={styles.categoryAmount}>₱300</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <View style={styles.category}>
+          <Text style={styles.categoryIcon}>＋</Text>
+          <Text style={styles.categoryLabel}>Others</Text>
+          <Text style={styles.categoryAmount}>₱{totals.Others}</Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 25,
+  safeArea: {
+    flex: 1,
     backgroundColor: '#fff',
+  },
+  container: {
+    padding: 20,
+    paddingBottom: 40,
   },
   header: {
     backgroundColor: '#F7B801',
     padding: 15,
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
+    borderRadius: 10,
   },
   headerText: {
     fontSize: 18,
@@ -78,17 +95,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: '#555',
-  },
-  amountBox: {
-    paddingVertical: 10,
-  },
-  amountLabel: {
-    color: '#555',
-    marginBottom: 5,
-  },
-  amountValue: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 14,
   },
   category: {
     flexDirection: 'row',
@@ -107,6 +114,7 @@ const styles = StyleSheet.create({
   },
   categoryAmount: {
     fontWeight: 'bold',
+    fontSize: 16,
   },
   categoryIcon: {
     fontSize: 20,

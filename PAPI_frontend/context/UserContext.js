@@ -1,6 +1,4 @@
 import React, { createContext, useState } from 'react';
-import avatar from '../assets/avatar.png';
-
 
 export const UserContext = createContext();
 
@@ -10,7 +8,7 @@ export const UserProvider = ({ children }) => {
     phone: '',
     address: '',
     place: '',
-    dob: '',
+    dob: null, // ✅ should be a Date object, not an empty string
     gender: '',
     image: require('../assets/avatar.png'), // Default image
   });

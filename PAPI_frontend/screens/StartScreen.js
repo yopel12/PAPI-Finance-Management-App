@@ -7,7 +7,7 @@ function StartScreen({ navigation }) {
       <Image source={require('../assets/logo.png')} style={styles.logo} />
       <Text style={styles.title}>Pinansyal</Text>
       <Text style={styles.subtitle}>Start Managing your Finances</Text>
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Register')}>
+      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Login')}>
         <Text style={styles.buttonText}>Continue</Text>
       </TouchableOpacity>
     </View>
@@ -19,7 +19,7 @@ export default StartScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex',
     alignItems: 'center',
     backgroundColor: '#fff',
     padding: 20,
@@ -31,9 +31,10 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   title: {
-    fontSize: 28,
+    fontSize: 35,
     fontWeight: 'bold',
     color: '#F7B801',
+    marginBottom: 15,
   },
   subtitle: {
     fontSize: 14,

@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Models;
 
-use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Model;
 
-class ExpenseController extends Controller
+class Expense extends Model
 {
-    //
+    protected $fillable = ['user_id', 'category', 'amount'];
 }

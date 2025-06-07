@@ -8,13 +8,21 @@ use Illuminate\Support\Facades\Auth;
 
 class ProfileController extends Controller
 {
-    // Get current user profile
+    // Get authenticated user profile
     public function show()
     {
-        return response()->json(Auth::user());
+        $user = Auth::user();
+
+        return response()->json([
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'dob' => $user->dob,
+            'gender' => $user->gender,
+        ]);
     }
 
-    // Update current user profile
+    // Update authenticated user profile
     public function update(Request $request)
     {
         $user = Auth::user();
@@ -22,10 +30,15 @@ class ProfileController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
+            'dob' => 'nullable|date',
+            'gender' => 'nullable|string|max:10',
         ]);
 
         $user->update($validated);
 
-        return response()->json(['message' => 'Profile updated', 'user' => $user]);
+        return response()->json([
+            'message' => 'Profile updated',
+            'user' => $user->only(['id', 'name', 'email', 'dob', 'gender']),
+        ]);
     }
 }

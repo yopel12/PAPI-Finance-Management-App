@@ -7,19 +7,24 @@ use App\Models\Expense;
 
 class ExpenseController extends Controller
 {
-    // Store new expense
     public function store(Request $request)
     {
+        // Optional: Log to see if the request is hitting here
+        \Log::info('Received expense:', $request->all());
+
         $validated = $request->validate([
-            'category' => 'required|string|max:255',
+            'type' => 'nullable|string',
+            'value' => 'required|string',
             'amount' => 'required|numeric|min:0',
-            'description' => 'nullable|string',
-            'date' => 'nullable|date',
+            'date' => 'required|date',
         ]);
 
-        $validated['user_id'] = 1; // Set default user for now
-
-        $expense = Expense::create($validated);
+        $expense = Expense::create([
+            'category' => $validated['value'],
+            'amount' => $validated['amount'],
+            'type' => $validated['type'] ?? 'text',
+            'date' => $validated['date'],
+        ]);
 
         return response()->json([
             'message' => 'Expense created!',
@@ -27,11 +32,8 @@ class ExpenseController extends Controller
         ], 201);
     }
 
-    // List all expenses for user_id 1
-    public function index(Request $request)
+    public function index()
     {
-        $expenses = Expense::where('user_id', 1)->latest()->get();
-
-        return response()->json($expenses);
+        return Expense::orderBy('date', 'desc')->get();
     }
 }

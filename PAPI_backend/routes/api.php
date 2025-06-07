@@ -4,6 +4,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\API\ProfileController;
+use App\Http\Controllers\ExpenseController;
+
+Route::post('/expenses', [ExpenseController::class, 'store']);   // Add expense
+Route::get('/expenses', [ExpenseController::class, 'index']);    // List expenses
+
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);

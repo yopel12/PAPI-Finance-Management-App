@@ -1,3 +1,4 @@
+// screens/HistoryScreen.js
 import React, { useContext, useMemo, useState } from 'react';
 import {
   View,
@@ -7,13 +8,13 @@ import {
   Image,
   TouchableOpacity,
 } from 'react-native';
-import { ExpenseContext } from '../context/ExpenseContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ExpenseContext } from '../context/ExpenseContext';
 
 export default function HistoryScreen() {
   const { expenses } = useContext(ExpenseContext);
 
-  // State to track which date-groups are expanded (true) or collapsed (false)
+  // Track which date-groups are expanded
   const [expandedDates, setExpandedDates] = useState({});
 
   // Group expenses by date
@@ -26,25 +27,25 @@ export default function HistoryScreen() {
     }, {});
   }, [expenses]);
 
-  // Sort dates descending (most recent first)
+  // Sort dates descending
   const sortedDates = useMemo(() => {
     return Object.keys(groupedExpenses).sort((a, b) => {
-      const da = new Date(a);
-      const db = new Date(b);
-      return db - da;
+      return new Date(b) - new Date(a);
     });
   }, [groupedExpenses]);
 
-  // Toggle expand/collapse for a given date
-  const toggleDate = (dateKey) => {
+  const toggleDate = (dateKey) =>
     setExpandedDates((prev) => ({
       ...prev,
       [dateKey]: !prev[dateKey],
     }));
-  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <View style={styles.header}>
+        <Text style={styles.headerText}> History</Text>
+      </View>
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {expenses.length === 0 ? (
           <Text style={styles.empty}>No expense logs yet.</Text>
@@ -54,8 +55,8 @@ export default function HistoryScreen() {
             return (
               <View key={date} style={styles.groupContainer}>
                 <TouchableOpacity
-                  onPress={() => toggleDate(date)}
                   style={styles.dateHeaderContainer}
+                  onPress={() => toggleDate(date)}
                 >
                   <Text style={styles.dateHeader}>{date}</Text>
                   <Text style={styles.arrow}>
@@ -95,6 +96,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f9f9f9',
   },
+  header: {
+    padding: 16,
+    backgroundColor: '#FFF',
+    borderBottomWidth: 1,
+    borderColor: '#eee',
+    alignItems: 'center',
+  },
+  headerText: {
+    fontSize: 24,
+    fontWeight: '600',
+  },
   scrollContent: {
     padding: 16,
     paddingBottom: 100,
@@ -106,9 +118,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
-    paddingVertical: 4,
-    paddingHorizontal: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
     backgroundColor: '#e0e0e0',
     borderRadius: 6,
   },
@@ -125,7 +136,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 14,
     borderRadius: 12,
-    marginBottom: 12,
+    marginTop: 8,
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 2 },

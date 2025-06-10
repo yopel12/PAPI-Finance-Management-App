@@ -5,7 +5,7 @@ function StartScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <Image source={require('../assets/logo.png')} style={styles.logo} />
-      <Text style={styles.title}>Pinansyal</Text>
+      <Text style={styles.title}>Papi</Text>
       <Text style={styles.subtitle}>Start Managing your Finances</Text>
       <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Login')}>
         <Text style={styles.buttonText}>Continue</Text>

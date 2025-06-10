@@ -1,5 +1,4 @@
 // screens/BudgetScreen.js
-
 import React, { useContext } from 'react';
 import {
   View,
@@ -12,11 +11,8 @@ import { FontAwesome5, MaterialIcons, Entypo } from '@expo/vector-icons';
 import { ExpenseContext } from '../context/ExpenseContext';
 
 export default function BudgetScreen() {
-  const expenseContext = useContext(ExpenseContext) || {};
-  const {
-    getBudgetTotals = () => ({ Food: 0, Bills: 0, Rent: 0, Others: 0 }),
-  } = expenseContext;
-
+  const { getBudgetTotals = () => ({ Food: 0, Bills: 0, Rent: 0, Others: 0 }) } =
+    useContext(ExpenseContext) || {};
   const totals = getBudgetTotals();
 
   return (
@@ -24,7 +20,7 @@ export default function BudgetScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         {/* ─── Header ─────────────────────────────────────────── */}
         <View style={styles.header}>
-          <Text style={styles.headerText}>Budget</Text>
+          <Text style={styles.headerText}> Budget</Text>
         </View>
 
         {/* ─── Description ───────────────────────────────────── */}
@@ -77,11 +73,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F7B801',
     padding: 15,
     borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 20,
   },
   headerText: {
     fontSize: 18,
     fontWeight: 'bold',
-    textAlign: 'center',
     color: '#000',
   },
   section: {

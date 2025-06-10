@@ -15,38 +15,52 @@ import {
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { Picker } from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/Ionicons';
+
+// pull the signed-in user
+import { AuthContext } from '../context/AuthContext';
 import { UserContext } from '../context/UserContext';
 
 export default function RegisterScreen({ navigation }) {
+  const { user } = useContext(AuthContext);
   const { updateUser } = useContext(UserContext);
+
+  // if somehow user is null, bail out
+  const uid = user?.uid;
+  if (!uid) {
+    // you might show a spinner or redirect to login
+    return <Text>Loading…</Text>;
+  }
 
   const [form, setForm] = useState({
     name: '',
     place: '',
-    dob: null,      // Will store a Date
+    dob: null,
     gender: '',
   });
-
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showDatePicker, setShowDatePicker]     = useState(false);
   const [showGenderPicker, setShowGenderPicker] = useState(false);
 
-  const handleChange = (key, value) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
+  const handleChange = (key, val) => {
+    setForm(f => ({ ...f, [key]: val }));
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     const { name, place, dob, gender } = form;
-    if (name.trim() && place.trim() && dob && gender) {
-      // 1. Save to context
-      updateUser(form);
+    if (!name.trim() || !place.trim() || !dob || !gender) {
+      return alert('Please fill in all fields.');
+    }
 
-      // 2. Navigate into MainTabs, passing "name" to the Home tab
-      navigation.replace('MainTabs', {
-        screen: 'Home',
-        params: { name: name.trim() },
+    try {
+      await updateUser(uid, {
+        fullName:     name.trim(),
+        placeOfBirth: place.trim(),
+        dateOfBirth:  dob,
+        gender,
       });
-    } else {
-      alert('Please fill in all fields.');
+      // drop into your main tabs
+      navigation.replace('MainTabs');
+    } catch (err) {
+      alert(`Error saving profile: ${err.message}`);
     }
   };
 
@@ -67,12 +81,11 @@ export default function RegisterScreen({ navigation }) {
             <View style={styles.inputWrapper}>
               <Icon name="person-outline" size={20} color="#888" style={styles.icon} />
               <TextInput
-                style={[styles.textInput, { color: '#000' }]}
+                style={styles.textInput}
                 placeholder="Full Name"
                 placeholderTextColor="#666"
                 value={form.name}
-                onChangeText={(text) => handleChange('name', text)}
-                returnKeyType="next"
+                onChangeText={text => handleChange('name', text)}
               />
             </View>
 
@@ -80,19 +93,17 @@ export default function RegisterScreen({ navigation }) {
             <View style={styles.inputWrapper}>
               <Icon name="location-outline" size={20} color="#888" style={styles.icon} />
               <TextInput
-                style={[styles.textInput, { color: '#000' }]}
+                style={styles.textInput}
                 placeholder="Place of Birth"
                 placeholderTextColor="#666"
                 value={form.place}
-                onChangeText={(text) => handleChange('place', text)}
-                returnKeyType="next"
+                onChangeText={text => handleChange('place', text)}
               />
             </View>
 
-            {/* Date of Birth (Touchable) */}
+            {/* Date of Birth */}
             <TouchableOpacity
               style={styles.inputWrapper}
-              activeOpacity={0.8}
               onPress={() => setShowDatePicker(true)}
             >
               <Icon name="calendar-outline" size={20} color="#888" style={styles.icon} />
@@ -104,7 +115,7 @@ export default function RegisterScreen({ navigation }) {
               isVisible={showDatePicker}
               mode="date"
               date={form.dob || new Date()}
-              onConfirm={(date) => {
+              onConfirm={date => {
                 handleChange('dob', date);
                 setShowDatePicker(false);
               }}
@@ -112,31 +123,29 @@ export default function RegisterScreen({ navigation }) {
               textColor="black"
             />
 
-            {/* Gender (Touchable) */}
+            {/* Gender */}
             <TouchableOpacity
               style={styles.inputWrapper}
-              activeOpacity={0.8}
-              onPress={() => setShowGenderPicker((prev) => !prev)}
+              onPress={() => setShowGenderPicker(v => !v)}
             >
               <Icon name="male-female-outline" size={20} color="#888" style={styles.icon} />
               <Text style={[styles.touchableText, { color: form.gender ? '#000' : '#666' }]}>
-                {form.gender ? form.gender : 'Select Gender'}
+                {form.gender || 'Select Gender'}
               </Text>
             </TouchableOpacity>
             {showGenderPicker && (
               <View style={styles.pickerContainer}>
                 <Picker
                   selectedValue={form.gender}
-                  onValueChange={(itemValue) => {
-                    handleChange('gender', itemValue);
+                  onValueChange={val => {
+                    handleChange('gender', val);
                     setShowGenderPicker(false);
                   }}
-                  itemStyle={{ color: '#000' }}
                 >
                   <Picker.Item label="Select Gender..." value="" color="#666" />
-                  <Picker.Item label="Male" value="Male" color="#000" />
-                  <Picker.Item label="Female" value="Female" color="#000" />
-                  <Picker.Item label="Other" value="Other" color="#000" />
+                  <Picker.Item label="Male"   value="Male"   />
+                  <Picker.Item label="Female" value="Female" />
+                  <Picker.Item label="Other"  value="Other"  />
                 </Picker>
               </View>
             )}
@@ -154,12 +163,10 @@ export default function RegisterScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safeArea: {
-    flex: 1,
-    backgroundColor: '#F7F7F7',
+    flex: 1, backgroundColor: '#F7F7F7'
   },
   scrollContainer: {
-    padding: 20,
-    paddingTop: 40,
+    padding: 20, paddingTop: 40
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -176,12 +183,10 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   textInput: {
-    flex: 1,
-    fontSize: 16,
+    flex: 1, fontSize: 16, color: '#000'
   },
   touchableText: {
-    flex: 1,
-    fontSize: 16,
+    flex: 1, fontSize: 16
   },
   pickerContainer: {
     backgroundColor: '#fff',

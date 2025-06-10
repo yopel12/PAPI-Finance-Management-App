@@ -1,18 +1,48 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Image, TouchableOpacity } from 'react-native';
+// screens/SignupScreen.js
+import React, { useState, useContext } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  Alert,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+} from 'react-native';
+import { AuthContext } from '../context/AuthContext';
 
 export default function SignupScreen({ navigation }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmpassword, setconfirmPassword] = useState('');
+  const { signup } = useContext(AuthContext);
+  const [email, setEmail]               = useState('');
+  const [password, setPassword]         = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading]           = useState(false);
 
-  const handleSignup = () => {
-    navigation.navigate('Login'); 
-  };
+  const handleSignup = async () => {
+    // Basic form validation
+    if (!email.trim() || !password || !confirmPassword) {
+      Alert.alert('Missing fields', 'Please fill out all fields.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      Alert.alert('Password mismatch', 'Passwords do not match.');
+      return;
+    }
 
-  const handleGoogleLogin = () => {
-    // Handle Google login logic here
-    console.log('Google Login clicked');
+    setLoading(true);
+    try {
+      // signup returns a UserCredential
+      const credential = await signup(email.trim(), password);
+      const { uid } = credential.user;
+
+      // Navigate to RegisterScreen, passing the new user's uid
+      navigation.navigate('Register', { uid });
+    } catch (err) {
+      Alert.alert('Signup Failed', err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -23,6 +53,8 @@ export default function SignupScreen({ navigation }) {
       <TextInput
         style={styles.input}
         placeholder="Email"
+        keyboardType="email-address"
+        autoCapitalize="none"
         value={email}
         onChangeText={setEmail}
       />
@@ -33,91 +65,70 @@ export default function SignupScreen({ navigation }) {
         value={password}
         onChangeText={setPassword}
       />
-
       <TextInput
         style={styles.input}
         placeholder="Confirm Password"
         secureTextEntry
-        value={confirmpassword}
-        onChangeText={setconfirmPassword}
+        value={confirmPassword}
+        onChangeText={setConfirmPassword}
       />
 
-      <TouchableOpacity style={styles.signInButton} onPress={handleSignup}>
-        <Text style={styles.signInButtonText}>Sign up</Text>
+      <TouchableOpacity
+        style={[styles.signUpButton, loading && styles.disabledButton]}
+        onPress={handleSignup}
+        disabled={loading}
+      >
+        {loading
+          ? <ActivityIndicator color="#fff" />
+          : <Text style={styles.signUpButtonText}>Sign up</Text>
+        }
       </TouchableOpacity>
 
-      <Text style={styles.orSignInWith}>- Or sign up with -</Text>
-
-      <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
-        <Image source={require('../assets/google.png')} style={styles.socialIcon} />
-      </TouchableOpacity>
+      <View style={styles.footer}>
+        <Text style={styles.prompt}>Already have an account?</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+          <Text style={styles.link}> Sign in</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 20,
+    flex: 1, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: '#FFFFFF', padding: 20,
   },
   logo: {
-    width: 170,
-    height: 170,
-    marginBottom: 5,
+    width: 170, height: 170, marginBottom: 5,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000000',
+    fontSize: 24, fontWeight: 'bold', color: '#000',
     marginBottom: 20,
   },
   input: {
-    width: '100%',
-    height: 50,
-    borderColor: '#000000',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    marginBottom: 15,
+    width: '100%', height: 50,
+    borderColor: '#000', borderWidth: 1, borderRadius: 8,
+    paddingHorizontal: 10, marginBottom: 15,
   },
-  signInButton: {
-    backgroundColor: '#FFC107',
-    width: '100%',
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 8,
-    marginBottom: 20,
+  signUpButton: {
+    backgroundColor: '#FFC107', width: '100%', height: 50,
+    justifyContent: 'center', alignItems: 'center',
+    borderRadius: 8, marginTop: 10,
   },
-  signInButtonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 16,
+  disabledButton: {
+    opacity: 0.6,
   },
-  orSignInWith: {
-    marginBottom: 20,
-    color: '#000000',
+  signUpButtonText: {
+    color: '#fff', fontWeight: 'bold', fontSize: 16,
   },
-  googleButton: {
-    backgroundColor: '#FFF',
-    elevation: 10,
-    width: 100,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 8,
-    marginBottom: 20,
+  footer: {
+    flexDirection: 'row', marginTop: 20,
   },
-  socialIcon: {
-    width: 24,
-    height: 24,
+  prompt: {
+    color: '#000', fontSize: 14,
   },
-  signUpText: {
-    color: '#000000',
-    fontSize: 14,
-    textDecorationLine: 'underline',
+  link: {
+    color: '#FFC107', fontSize: 14,
   },
 });

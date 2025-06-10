@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "943973250243",
+    "project_id": "papi-e7077",
+    "storage_bucket": "papi-e7077.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:943973250243:android:640e493b5e7bc005c59e76",
+        "android_client_info": {
+          "package_name": "com.PinansyalApp.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA5Oo66JY1w8XHV45KPvVywbTMRgbcKyjU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

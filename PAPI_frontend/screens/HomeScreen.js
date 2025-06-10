@@ -1,34 +1,44 @@
+// screens/HomeScreen.js
 
-import React, { useState, useContext, useCallback } from 'react';
+import React, { useState, useContext, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  Image,
-  ScrollView,
   SafeAreaView,
   ActivityIndicator,
+  KeyboardAvoidingView,
   Platform,
-  RefreshControl,
-  Alert,
+  FlatList,
+  Dimensions,
+  Animated,
 } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
-import { ExpenseContext } from '../context/ExpenseContext';
-import { useNavigation, CommonActions } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 
-export default function HomeScreen() {
-  const [entry, setEntry] = useState('');
-  const [isFocused, setIsFocused] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [aiResponse, setAiResponse] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
+import { ExpenseContext } from '../context/ExpenseContext';
+import { AuthContext }    from '../context/AuthContext';
+import { useNavigation }  from '@react-navigation/native';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const INFO_PANEL_WIDTH      = 300;
+const INFO_PANEL_MAX_HEIGHT = 350;
+
+export default function HomeScreen({ route }) {
+  const [messages, setMessages]     = useState([
+    { id: 'welcome', sender: 'bot', text: 'Welcome! How can I help you today?' }
+  ]);
+  const [entry, setEntry]           = useState('');
+  const [isLoading, setIsLoading]   = useState(false);
+  const [infoVisible, setInfoVisible] = useState(false);
+  const slideAnim = useRef(new Animated.Value(INFO_PANEL_WIDTH)).current;
 
   const { addExpense } = useContext(ExpenseContext);
-  const navigation = useNavigation();
+  const { logout }     = useContext(AuthContext);
+  const userName       = route.params?.name?.trim() || 'Guest';
 
   const looksLikeExpense = (text) => {
     const parts = text.split('-');
@@ -37,92 +47,82 @@ export default function HomeScreen() {
     return parts[0].trim().length > 0 && !isNaN(amount);
   };
 
-  const handleEntrySubmit = async () => {
+  const sendMessage = async () => {
     const trimmed = entry.trim();
     if (!trimmed) return;
 
+    const timestamp = Date.now();
+    const userMsg = {
+      id: timestamp.toString(),
+      sender: 'user',
+      text: trimmed,
+    };
+
+    setEntry('');
+
+    // Expense case
     if (looksLikeExpense(trimmed)) {
-      // ───── Expense flow: send to backend ─────
-      const [categoryRaw, amountRaw] = trimmed.split('-');
-      const category = categoryRaw.trim();
-      const amountValue = parseFloat(amountRaw.trim());
+      const [catRaw, amtRaw] = trimmed.split('-');
+      addExpense({
+        type: 'text',
+        value: catRaw.trim().toLowerCase(),
+        amount: parseFloat(amtRaw.trim()),
+        date: new Date().toLocaleDateString(),
+      });
 
-      const API_URL =
-        Platform.OS === 'android'
-          ? 'http://10.0.2.2:8000/api/expenses'
-          : 'http://localhost:8000/api/expenses';
+      const ackMsg = {
+        id: (timestamp + 1).toString(),
+        sender: 'bot',
+        text: '✅ Expense added.',
+      };
 
-      try {
-        const res = await axios.post(
-          API_URL,
-          {
-            type: 'text',
-            value: category,
-            amount: amountValue,
-            date: new Date().toISOString().split('T')[0], // 'YYYY-MM-DD'
-          },
-          { headers: { 'Content-Type': 'application/json' } }
-        );
+      setMessages(prev => [...prev, userMsg, ackMsg]);
+      return;
+    }
 
-        if (res.status === 201) {
-          addExpense({
-            type: 'text',
-            value: category,
-            amount: amountValue,
-            date: new Date().toLocaleDateString(),
-          });
-          setEntry('');
-          setAiResponse(null);
-          Alert.alert('Success', 'Expense added!');
-        } else {
-          Alert.alert('Error', 'Unexpected server response.');
-        }
-      } catch (err) {
-        Alert.alert('Error', 'Could not add expense. Please check your connection and backend.');
-        console.log(err);
-      }
-    } else {
-      // ───── AI Chat flow ─────
-      setIsLoading(true);
-      setAiResponse(null);
+    // AI chat case
+    setIsLoading(true);
+    try {
+      const API_URL = Platform.OS === 'android'
+        ? 'http://10.0.2.2:8000/api/ai-chat'
+        : 'http://localhost:8000/api/ai-chat';
 
-      try {
-        const API_URL =
-          Platform.OS === 'android'
-            ? 'http://10.0.2.2:8000/api/ai-chat'
-            : 'http://localhost:8000/api/ai-chat';
+      const res = await axios.post(
+        API_URL,
+        { message: trimmed },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
 
-        const res = await axios.post(
-          API_URL,
-          { message: trimmed },
-          { headers: { 'Content-Type': 'application/json' } }
-        );
+      const botText = res.data.status === 'success'
+        ? res.data.answer.trim()
+        : '⚠️ Server error. Try again later.';
 
-        if (res.data.status === 'success') {
-          setAiResponse(res.data.answer.trim());
-        } else {
-          setAiResponse('⚠️ Server error. Try again later.');
-        }
-      } catch (err) {
-        console.warn('AI Chat error:', err.message);
-        setAiResponse('⚠️ Could not reach AI service.');
-      } finally {
-        setIsLoading(false);
-        setEntry('');
-      }
+      const botMsg = {
+        id: (timestamp + 1).toString(),
+        sender: 'bot',
+        text: botText,
+      };
+
+      setMessages(prev => [...prev, userMsg, botMsg]);
+    } catch (err) {
+      const errMsg = {
+        id: (timestamp + 1).toString(),
+        sender: 'bot',
+        text: '⚠️ Could not reach AI service.',
+      };
+      setMessages(prev => [...prev, userMsg, errMsg]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleOpenCamera = async () => {
-    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permissionResult.granted) {
-      alert('Camera access is required!');
+  const onScreenshot = async () => {
+    const { granted } = await ImagePicker.requestCameraPermissionsAsync();
+    if (!granted) {
+      alert('Camera permission required!');
       return;
     }
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: false,
-      quality: 1,
-    });
+    const result = await ImagePicker.launchCameraAsync({ quality: 1 });
     if (!result.canceled) {
       addExpense({
         type: 'image',
@@ -130,267 +130,233 @@ export default function HomeScreen() {
         amount: 0,
         date: new Date().toLocaleDateString(),
       });
+      const ackMsg = {
+        id: (Date.now()+1).toString(),
+        sender: 'bot',
+        text: '📸 Screenshot saved as expense.',
+      };
+      setMessages(prev => [...prev, ackMsg]);
     }
   };
 
-  // Called when user pulls down to refresh
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
+  const onVoice = async () => {
+    // replace with your voice-to-text implementation
+    const transcript = '…transcribed text…';
+    if (transcript) {
+      setEntry(prev => prev + transcript);
+    }
+  };
 
-    setTimeout(() => {
-      setAiResponse(null);
-      setRefreshing(false);
-    }, 1000);
-  }, []);
+  const openInfo = () => {
+    setInfoVisible(true);
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+  const closeInfo = () => {
+    Animated.timing(slideAnim, {
+      toValue: INFO_PANEL_WIDTH,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => setInfoVisible(false));
+  };
+
+  const renderItem = ({ item }) => (
+    <View
+      style={[
+        styles.bubble,
+        item.sender === 'user' ? styles.userBubble : styles.botBubble
+      ]}
+    >
+      <Text style={ item.sender==='user' ? styles.userText : styles.botText }>
+        {item.text}
+      </Text>
+    </View>
+  );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F7B801' }}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor="#000"
-            title={refreshing ? 'Refreshing...' : 'Pull to refresh'}
-            titleColor="#555"
-          />
-        }
-      >
-        {/* ───── Logout / Header ───── */}
-        <View style={styles.logoutWrapper}>
-          <TouchableOpacity
-            style={styles.logoutButton}
-            onPress={() =>
-              navigation.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [{ name: 'Start' }],
-                })
-              )
-            }
-          >
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.header}>
-          <View style={styles.circle}>
-            <Image source={require('../assets/logo.png')} style={styles.logo} />
-          </View>
-          <Text style={styles.appName}>PinansyalApp</Text>
-        </View>
-
-        {/* ───── Expense Capture Card ───── */}
-        <View style={styles.card}>
-          <Text style={styles.captureTitle}>Capture an expense</Text>
-          <Text style={styles.captureDesc}>
-            Store your daily expenses using text, screenshots, voices and videos.
-          </Text>
-
-          <TouchableOpacity style={styles.captureButton} onPress={handleOpenCamera}>
-            <MaterialIcons name="screenshot" size={24} color="black" />
-            <Text style={styles.captureText}>Screenshot</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.captureButton}>
-            <Ionicons name="mic-outline" size={24} color="black" />
-            <Text style={styles.captureText}>Voice</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.captureButton}>
-            <FontAwesome name="video-camera" size={24} color="black" />
-            <Text style={styles.captureText}>Video</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* ───── Conditionally Render Instructions ───── */}
-        {!isFocused && (
-          <View style={styles.instructionsBox}>
-            <Text style={styles.instructionText}>• To add expense: e.g., groceries – 150</Text>
-            <Text style={styles.instructionText}>• To ask AI: just type your question</Text>
-          </View>
-        )}
-
-        {/* ───── Combined TextInput ───── */}
-        <TextInput
-          style={styles.input}
-          placeholder="Type here..."
-          placeholderTextColor="#555"
-          value={entry}
-          onChangeText={setEntry}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          onSubmitEditing={handleEntrySubmit}
-          returnKeyType="send"
-          blurOnSubmit={false}
-        />
-
-        <TouchableOpacity style={styles.addButton} onPress={handleEntrySubmit}>
-          <Text style={styles.addButtonText}>
-            {looksLikeExpense(entry) ? 'Add Expense' : 'Ask AI'}
-          </Text>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.iconRow}>
+        <TouchableOpacity onPress={logout} style={styles.logoutButton}>
+          <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
+        <TouchableOpacity onPress={openInfo} style={styles.infoButton}>
+          <Ionicons name="information-circle-outline" size={28} color="#fff" />
+        </TouchableOpacity>
+      </View>
 
-        {/* ───── AI Response Box ───── */}
-        {isLoading && (
-          <View style={styles.aiResponseContainer}>
-            <ActivityIndicator size="small" color="#555" />
-            <Text style={styles.aiStatusText}>Thinking...</Text>
-          </View>
-        )}
-        {aiResponse !== null && !isLoading && (
-          <View style={styles.aiResponseContainer}>
-            <Text style={styles.aiText}>{aiResponse}</Text>
-          </View>
-        )}
-      </ScrollView>
+      <FlatList
+        data={messages}
+        keyExtractor={i => i.id}
+        renderItem={renderItem}
+        contentContainerStyle={styles.chat}
+      />
+
+      {isLoading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#fff" />
+        </View>
+      )}
+
+      <KeyboardAvoidingView
+        behavior={Platform.select({ ios: 'padding', android: undefined })}
+        keyboardVerticalOffset={Platform.select({ ios: 80, android: 0 })}
+      >
+        <View style={styles.inputRow}>
+          <TouchableOpacity onPress={onScreenshot} style={styles.iconButton}>
+            <FontAwesome name="camera" size={24} color="#444" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onVoice} style={styles.iconButton}>
+            <MaterialIcons name="keyboard-voice" size={24} color="#444" />
+          </TouchableOpacity>
+          <TextInput
+            style={styles.input}
+            placeholder="Type a message..."
+            multiline
+            value={entry}
+            onChangeText={setEntry}
+          />
+          <TouchableOpacity
+            onPress={sendMessage}
+            style={styles.sendButton}
+            disabled={isLoading || !entry.trim()}
+          >
+            <MaterialIcons
+              name="send"
+              size={24}
+              color={entry.trim() ? "#fff" : "#AAA"}
+            />
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+
+      {infoVisible && (
+        <View style={styles.overlayContainer}>
+          <TouchableOpacity style={styles.backdrop} onPress={closeInfo} />
+          <Animated.View
+            style={[
+              styles.infoPanel,
+              { transform: [{ translateX: slideAnim }] }
+            ]}
+          >
+            <View style={styles.panelHeader}>
+              <Text style={styles.panelHeaderText}>About Papi</Text>
+              <TouchableOpacity onPress={closeInfo}>
+                <Ionicons name="close-circle" size={24} color="#F7B801" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.panelContent}>
+              <Text style={styles.staticTitle}>What is Papi?</Text>
+              <Text style={styles.staticText}>
+                Papi helps you track expenses, set budgets, and gain insights into your spending.
+              </Text>
+              <Text style={styles.staticText}>
+                • Add expenses by typing “category – amount”
+                {'\n'}• Ask the AI anything about your finances
+                {'\n'}• Use the chart icon to view budgets
+                {'\n'}• Need help? Contact support in Settings.
+              </Text>
+            </View>
+          </Animated.View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    padding: 20,
+  safeArea:      { flex: 1, backgroundColor: '#fff' },
+  iconRow:       {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
     backgroundColor: '#F7B801',
-    flexGrow: 1,
-    paddingTop: 10,
-    justifyContent: 'flex-start',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 30,
-  },
-  logo: {
-    width: 50,
-    height: 50,
-    resizeMode: 'contain',
-  },
-  appName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
-    padding: 7,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  captureTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#F7B801',
-    marginBottom: 5,
-    textAlign: 'center',
-  },
-  captureDesc: {
-    fontSize: 12,
-    color: '#444',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  captureButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#eee',
-    padding: 12,
-    marginBottom: 10,
-    borderRadius: 10,
-    justifyContent: 'center',
-  },
-  captureText: {
-    marginLeft: 10,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  instructionsBox: {
-    backgroundColor: '#f7f7f7',
-    borderRadius: 10,
-    paddingVertical: 8,
+    height: 56,
     paddingHorizontal: 12,
-    marginBottom: 10,
-  },
-  instructionText: {
-    fontSize: 13,
-    color: '#666',
-    marginBottom: 2,
-  },
-  input: {
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 14,
-    fontSize: 16,
-    marginBottom: 10,
-    color: '#000',
-  },
-  addButton: {
-    backgroundColor: '#000',
-    borderRadius: 10,
-    padding: 14,
     alignItems: 'center',
-    marginBottom: 20,
   },
-  addButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  aiResponseContainer: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginBottom: 20,
-  },
-  aiText: {
-    fontSize: 14,
-    color: '#333',
-    lineHeight: 20,
-  },
-  aiStatusText: {
-    marginTop: 4,
-    fontSize: 14,
-    color: '#555',
-  },
-  logoutButton: {
+  logoutButton:  {
     backgroundColor: '#fff',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderRadius: 20,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-  },
-  logoutWrapper: {
-    alignItems: 'flex-end',
-    marginBottom: 40,
-  },
-  logoutText: {
-    backgroundColor: 'white',
-    color: 'black',
-    fontWeight: 'bold',
-  },
-  circle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#fff',
+    marginRight: 8,
     justifyContent: 'center',
-    elevation: 5,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    height: 36,
+
   },
+  logoutText:    { color: 'black', fontWeight: 'bold' },
+  infoButton:    { backgroundColor: '#F7B801', borderRadius: 20, height: 36, width: 36, justifyContent: 'center', alignItems: 'center' },
+  chat:          { paddingHorizontal: 12, paddingBottom: 6 },
+  bubble:        {
+    marginVertical: 4,
+    padding:        10,
+    borderRadius:   12,
+    maxWidth:       '80%'
+  },
+  userBubble:    { backgroundColor: '#DCF8C6', alignSelf: 'flex-end' },
+  botBubble:     { backgroundColor: '#EEE', alignSelf: 'flex-start' },
+  userText:      { color: '#000' },
+  botText:       { color: '#000' },
+  inputRow:      {
+    flexDirection: 'row',
+    alignItems:    'flex-end',
+    padding:       8,
+    borderTopWidth: 1,
+    borderColor:   '#DDD',
+    backgroundColor: '#FFF'
+  },
+  iconButton:    { padding: 8, marginBottom: 4 },
+  input:         {
+    flex:            1,
+    minHeight:       40,
+    maxHeight:       120,
+    borderRadius:    20,
+    borderWidth:     1,
+    borderColor:     '#CCC',
+    paddingHorizontal: 12,
+    paddingVertical:   8,
+    marginHorizontal:  6,
+    backgroundColor: '#F9F9F9'
+  },
+  sendButton:    {
+    backgroundColor: '#007AFF',
+    borderRadius:    20,
+    padding:         10,
+    marginBottom:    4
+  },
+  loadingOverlay:{ 
+    ...StyleSheet.absoluteFillObject, 
+    backgroundColor:'rgba(0,0,0,0.2)', 
+    justifyContent:'center', 
+    alignItems:'center' 
+  },
+  overlayContainer:{
+    position: 'absolute',
+    top: 0, left: 0,
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
+  },
+  backdrop:      { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' },
+  infoPanel:     {
+    position: 'absolute',
+    top: 70, right: 20,
+    width: INFO_PANEL_WIDTH,
+    maxHeight: INFO_PANEL_MAX_HEIGHT,
+    backgroundColor: '#fff',
+    borderRadius:    12,
+    padding:         16,
+    elevation:       8
+  },
+  panelHeader:   {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems:    'center',
+    marginBottom:  12
+  },
+  panelHeaderText:{ fontSize:18, fontWeight:'600', color:'#F7B801' },
+  panelContent:  { paddingBottom: 8 },
+  staticTitle:   { fontSize:16, fontWeight:'500', marginBottom:6, color:'#F7B801' },
+  staticText:    { fontSize:14, color:'#333', lineHeight:20, marginBottom:8 }
 });

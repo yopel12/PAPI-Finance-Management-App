@@ -19,7 +19,7 @@ export default function ChatScreen() {
   const [messages, setMessages] = useState([]);
   const listRef = useRef();
 
-  // Whenever messages change, scroll to bottom
+  // Scroll to bottom when new messages arrive
   useEffect(() => {
     if (listRef.current && messages.length) {
       listRef.current.scrollToEnd({ animated: true });
@@ -30,18 +30,15 @@ export default function ChatScreen() {
     const trimmed = inputText.trim();
     if (!trimmed) return;
 
-    // Append the user’s message locally
     const userMsg = { id: Date.now().toString(), text: trimmed, sender: 'user' };
     setMessages(prev => [...prev, userMsg]);
     setInputText('');
 
     try {
-      // On an iOS simulator, "http://localhost:8000" works.
-      // On a physical device, replace "YOUR_IP_HERE" with your Mac’s LAN IP (e.g. "192.168.1.5").
       const API_URL =
         Platform.OS === 'ios'
           ? 'http://localhost:8000/api/ai-chat'
-          : `http://YOUR_IP_HERE:8000/api/ai-chat`;
+          : 'http://YOUR_IP_HERE:8000/api/ai-chat';
 
       const response = await axios.post(
         API_URL,
@@ -49,24 +46,18 @@ export default function ChatScreen() {
         { headers: { 'Content-Type': 'application/json' } }
       );
 
-      if (response.data.status === 'success') {
-        const aiMsg = {
-          id: (Date.now() + 1).toString(),
-          text: response.data.answer,
-          sender: 'ai',
-        };
-        setMessages(prev => [...prev, aiMsg]);
-      } else {
-        const errMsg = {
-          id: (Date.now() + 2).toString(),
-          text: '⚠️ Server error. Try again.',
-          sender: 'ai',
-        };
-        setMessages(prev => [...prev, errMsg]);
-      }
-    } catch (err) {
+      const aiMsg = {
+        id: (Date.now() + 1).toString(),
+        text:
+          response.data.status === 'success'
+            ? response.data.answer
+            : '⚠️ Server error. Try again.',
+        sender: 'ai',
+      };
+      setMessages(prev => [...prev, aiMsg]);
+    } catch {
       const errMsg = {
-        id: (Date.now() + 3).toString(),
+        id: (Date.now() + 2).toString(),
         text: '⚠️ Could not reach AI service.',
         sender: 'ai',
       };
@@ -85,17 +76,12 @@ export default function ChatScreen() {
 
   return (
     <>
-      {/* Make status bar translucent so our SafeAreaView can draw under it */}
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
-
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView
           style={styles.keyboardAvoid}
-          behavior="padding"
-          // Offset should be roughly status bar (20) + navigation header (if any, e.g. 44)
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          {/* ───── Message List ───── */}
           <FlatList
             ref={listRef}
             data={messages}
@@ -105,7 +91,6 @@ export default function ChatScreen() {
             style={styles.flatList}
           />
 
-          {/* ───── Input Bar (floats above keyboard) ───── */}
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}

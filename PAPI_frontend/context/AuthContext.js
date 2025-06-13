@@ -16,6 +16,7 @@ export const AuthProvider = ({ children }) => {
   // keep local `user` in sync with Firebase Auth
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
+      console.log("🔥 onAuthStateChanged:", fbUser);
       setUser(fbUser);
     });
     return unsubscribe;

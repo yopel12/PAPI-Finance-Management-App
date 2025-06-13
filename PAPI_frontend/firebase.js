@@ -1,14 +1,11 @@
-// firebase.js
-import { initializeApp, getApps } from 'firebase/app';
-
-// switch to the React Native–flavored auth entrypoint
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
+  getAuth,
   initializeAuth,
   getReactNativePersistence
 } from 'firebase/auth';
-
-// import AsyncStorage
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBLzcKNDbsBnySyrSVehYgqFDIRmwH0hVQ",
@@ -20,11 +17,17 @@ const firebaseConfig = {
   measurementId: "G-KZZXV1J2F3"
 };
 
-const app = getApps().length
-  ? getApps()[0]
-  : initializeApp(firebaseConfig);
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-// **This** line hooks up AsyncStorage so your auth state persists between app launches:
-export const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage),
-});
+// ✅ Check if auth is already initialized
+let auth;
+try {
+  auth = getAuth(app);
+} catch (e) {
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage),
+  });
+}
+
+export { app, auth };
+export const db = getFirestore(app);

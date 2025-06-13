@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { auth, db } from '../firebase';                // adjust path if you still keep `config/` folder
+import { auth, db } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
@@ -16,9 +16,9 @@ export const UserProvider = ({ children }) => {
     gender: '',
     image: require('../assets/avatar.png'), // default avatar
   });
+  const [profileExists, setProfileExists] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // listen for auth changes and load profile from Firestore
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
@@ -27,18 +27,26 @@ export const UserProvider = ({ children }) => {
         const snap = await getDoc(docRef);
 
         if (snap.exists()) {
-          // merge Firestore data, preserve default avatar if none
+          const data = snap.data();
+          const complete =
+            data.name?.trim() &&
+            data.place?.trim() &&
+            data.dob &&
+            data.gender?.trim();
+
+          setProfileExists(Boolean(complete));
+
           setUser({
             uid,
             image: require('../assets/avatar.png'),
-            ...snap.data(),
+            ...data,
           });
         } else {
-          // no profile yet—just set uid
+          setProfileExists(false);
           setUser((prev) => ({ ...prev, uid }));
         }
       } else {
-        // signed out: reset to defaults
+        setProfileExists(false);
         setUser({
           uid: null,
           name: '',
@@ -50,25 +58,33 @@ export const UserProvider = ({ children }) => {
           image: require('../assets/avatar.png'),
         });
       }
+
       setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
-  /**
-   * Merge updates into Firestore and local state
-   * @param {{ [key: string]: any }} updates
-   */
   const updateUser = async (updates) => {
     if (!user.uid) throw new Error('No authenticated user to update');
+
     const userRef = doc(db, 'users', user.uid);
     await setDoc(userRef, updates, { merge: true });
-    setUser((prev) => ({ ...prev, ...updates }));
+
+    const updated = { ...user, ...updates };
+    setUser(updated);
+
+    const complete =
+      updated.name?.trim() &&
+      updated.place?.trim() &&
+      updated.dob &&
+      updated.gender?.trim();
+
+    setProfileExists(Boolean(complete));
   };
 
   return (
-    <UserContext.Provider value={{ user, loading, updateUser }}>
+    <UserContext.Provider value={{ user, profileExists, loading, updateUser }}>
       {children}
     </UserContext.Provider>
   );

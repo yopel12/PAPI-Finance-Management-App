@@ -21,21 +21,26 @@ export default function LoginScreen({ navigation }) {
   const [loading, setLoading]   = useState(false);
 
   const handleLogin = async () => {
-    if (!email.trim() || !password) {
-      Alert.alert('Error', 'Please enter both email and password.');
-      return;
-    }
+  if (!email.trim() || !password) {
+    Alert.alert('Error', 'Please enter both email and password.');
+    return;
+  }
 
-    setLoading(true);
-    try {
-      await login(email.trim(), password);
-      // onAuthStateChanged will navigate for you
-    } catch (err) {
-      Alert.alert('Login Failed', err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  setLoading(true);
+  try {
+    console.log('🔑 Attempting login for', email.trim());
+    await login(email.trim(), password);
+
+    console.log('✅ Login successful, navigating to AppTabs');
+    navigation.replace('AppTabs');
+  } catch (err) {
+    console.log('❌ Login error', err);
+    Alert.alert('Login Failed', err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleGoogleLogin = () => {
     console.log('Google Login clicked');

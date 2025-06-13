@@ -1,4 +1,4 @@
-// screens/RegisterScreen.js
+// RegisterScreen.js
 import React, { useState, useContext } from 'react';
 import {
   SafeAreaView,
@@ -15,21 +15,10 @@ import {
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { Picker } from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/Ionicons';
-
-// pull the signed-in user
-import { AuthContext } from '../context/AuthContext';
 import { UserContext } from '../context/UserContext';
 
 export default function RegisterScreen({ navigation }) {
-  const { user } = useContext(AuthContext);
-  const { updateUser } = useContext(UserContext);
-
-  // if somehow user is null, bail out
-  const uid = user?.uid;
-  if (!uid) {
-    // you might show a spinner or redirect to login
-    return <Text>Loading…</Text>;
-  }
+  const { user, updateUser, loading } = useContext(UserContext);
 
   const [form, setForm] = useState({
     name: '',
@@ -37,7 +26,7 @@ export default function RegisterScreen({ navigation }) {
     dob: null,
     gender: '',
   });
-  const [showDatePicker, setShowDatePicker]     = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showGenderPicker, setShowGenderPicker] = useState(false);
 
   const handleChange = (key, val) => {
@@ -51,18 +40,33 @@ export default function RegisterScreen({ navigation }) {
     }
 
     try {
-      await updateUser(uid, {
-        fullName:     name.trim(),
-        placeOfBirth: place.trim(),
-        dateOfBirth:  dob,
+      await updateUser({
+        name: name.trim(),
+        place: place.trim(),
+        dob,
         gender,
       });
-      // drop into your main tabs
-      navigation.replace('MainTabs');
+      navigation.replace('AppTabs');
     } catch (err) {
       alert(`Error saving profile: ${err.message}`);
     }
   };
+
+  if (loading || !user) {
+    return (
+      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Loading profile…</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!user.uid) {
+    return (
+      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Missing account info. Please sign up again.</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <>
@@ -77,7 +81,6 @@ export default function RegisterScreen({ navigation }) {
             contentContainerStyle={styles.scrollContainer}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Full Name */}
             <View style={styles.inputWrapper}>
               <Icon name="person-outline" size={20} color="#888" style={styles.icon} />
               <TextInput
@@ -89,7 +92,6 @@ export default function RegisterScreen({ navigation }) {
               />
             </View>
 
-            {/* Place of Birth */}
             <View style={styles.inputWrapper}>
               <Icon name="location-outline" size={20} color="#888" style={styles.icon} />
               <TextInput
@@ -101,7 +103,6 @@ export default function RegisterScreen({ navigation }) {
               />
             </View>
 
-            {/* Date of Birth */}
             <TouchableOpacity
               style={styles.inputWrapper}
               onPress={() => setShowDatePicker(true)}
@@ -123,7 +124,6 @@ export default function RegisterScreen({ navigation }) {
               textColor="black"
             />
 
-            {/* Gender */}
             <TouchableOpacity
               style={styles.inputWrapper}
               onPress={() => setShowGenderPicker(v => !v)}
@@ -143,14 +143,13 @@ export default function RegisterScreen({ navigation }) {
                   }}
                 >
                   <Picker.Item label="Select Gender..." value="" color="#666" />
-                  <Picker.Item label="Male"   value="Male"   />
+                  <Picker.Item label="Male" value="Male" />
                   <Picker.Item label="Female" value="Female" />
-                  <Picker.Item label="Other"  value="Other"  />
+                  <Picker.Item label="Other" value="Other" />
                 </Picker>
               </View>
             )}
 
-            {/* Register Button */}
             <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
               <Text style={styles.registerText}>Register</Text>
             </TouchableOpacity>
@@ -162,50 +161,25 @@ export default function RegisterScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1, backgroundColor: '#F7F7F7'
-  },
-  scrollContainer: {
-    padding: 20, paddingTop: 40
-  },
+  safeArea: { flex: 1, backgroundColor: '#F7F7F7' },
+  scrollContainer: { padding: 20, paddingTop: 40 },
   inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderColor: '#DDD',
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 16,
-    paddingHorizontal: 12,
-    height: 50,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff',
+    borderColor: '#DDD', borderWidth: 1, borderRadius: 8,
+    marginBottom: 16, paddingHorizontal: 12, height: 50,
   },
-  icon: {
-    marginRight: 8,
-  },
-  textInput: {
-    flex: 1, fontSize: 16, color: '#000'
-  },
-  touchableText: {
-    flex: 1, fontSize: 16
-  },
+  icon: { marginRight: 8 },
+  textInput: { flex: 1, fontSize: 16, color: '#000' },
+  touchableText: { flex: 1, fontSize: 16 },
   pickerContainer: {
-    backgroundColor: '#fff',
-    borderColor: '#DDD',
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 16,
+    backgroundColor: '#fff', borderColor: '#DDD', borderWidth: 1,
+    borderRadius: 8, marginBottom: 16,
     overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
   },
   registerButton: {
-    backgroundColor: '#FF8C00',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 24,
+    backgroundColor: '#FF8C00', borderRadius: 8,
+    paddingVertical: 14, alignItems: 'center', marginTop: 24,
   },
-  registerText: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: '600',
-  },
+  registerText: { color: '#fff', fontSize: 17, fontWeight: '600' },
 });
+ 

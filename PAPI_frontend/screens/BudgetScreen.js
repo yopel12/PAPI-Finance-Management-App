@@ -8,7 +8,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { FontAwesome5, MaterialIcons, Entypo } from '@expo/vector-icons';
-import { ExpenseContext } from '../context/ExpenseContext';
+import { ExpenseContext } from '../../context/ExpenseContext';
 
 export default function BudgetScreen() {
   const { getBudgetTotals = () => ({ Food: 0, Bills: 0, Rent: 0, Others: 0 }) } =

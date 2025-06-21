@@ -20,10 +20,10 @@ import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 
-import { ExpenseContext } from '../context/ExpenseContext';
-import { AuthContext }    from '../context/AuthContext';
-import { useNavigation }  from '@react-navigation/native';
-import logo from '../assets/logo.png';
+import { ExpenseContext } from '../../context/ExpenseContext';
+import { AuthContext }    from '../../context/AuthContext';
+import { useNavigation,CommonActions }  from '@react-navigation/native';
+import logo from '../../assets/logo.png';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const INFO_PANEL_WIDTH      = 300;
@@ -140,7 +140,19 @@ export default function HomeScreen({ route }) {
             onPress={async () => {
               try {
                 await logout();
-                navigation.replace('Login'); // Replace with your login screen route name
+                 navigation.getParent()?.dispatch(
+                   CommonActions.reset({
+                     index: 0,
+                     routes: [
+                       {
+                         name: 'AuthStack',   
+                         state: {
+                           routes: [{ name: 'Login' }] 
+                         },
+                       },
+                     ],
+                   })
+                 );
               } catch (err) {
                 alert('Logout Failed: ' + err.message);
               }

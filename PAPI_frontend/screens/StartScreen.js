@@ -1,54 +1,99 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+// src/screens/StartScreen.js
 
-function StartScreen({ navigation }) {
+import React from 'react';
+import {
+  SafeAreaView,
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  StatusBar,
+} from 'react-native';
+
+export default function StartScreen({ navigation }) {
   return (
-    <View style={styles.container}>
-      <Image source={require('../assets/logo.png')} style={styles.logo} />
-      <Text style={styles.title}>Papi</Text>
-      <Text style={styles.subtitle}>Start Managing your Finances</Text>
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Login')}>
-        <Text style={styles.buttonText}>Continue</Text>
-      </TouchableOpacity>
-    </View>
+    <SafeAreaView style={styles.root}>
+      <StatusBar barStyle="light-content" backgroundColor={styles.root.backgroundColor} />
+      <View style={styles.container}>
+        <View style={styles.card}>
+          <View style={styles.logoCircle}>
+            <Image
+              source={require('../../assets/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </View>
+          <Text style={styles.title}>Papi</Text>
+          <Text style={styles.subtitle}>Start managing your finances</Text>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => navigation.navigate('Login')}
+          >
+            <Text style={styles.buttonText}>Continue {'\u2192'}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
-export default StartScreen;
-
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: '#FFC731',
+  },
   container: {
     flex: 1,
-    justifyContent: 'flex',
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
     padding: 20,
   },
+  card: {
+    width: '100%',
+    maxWidth: 360,
+    height: 360,
+    backgroundColor: '#ffffff',
+    borderRadius: 30,
+    padding: 24,
+    alignItems: 'center',
+  },
+  logoCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    elevation: 3,
+  },
   logo: {
-    width: 300,
-    height: 300,
-    marginBottom: 30,
-    resizeMode: 'contain',
+    width: 80,
+    height: 80,
   },
   title: {
-    fontSize: 35,
-    fontWeight: 'bold',
-    color: '#F7B801',
-    marginBottom: 15,
+    fontSize: 32,
+    fontWeight: 'light-bold',
+    color: '#000000',
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#F7B801',
-    marginBottom: 50,
+    fontSize: 20,
+    color: '#666666',
+    textAlign: 'center',
+    marginBottom: 24,
   },
   button: {
-    backgroundColor: '#F7B801',
-    paddingVertical: 12,
-    paddingHorizontal: 60,
-    borderRadius: 10,
+    backgroundColor: '#000000',
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 25,
+    marginTop: 57,
   },
   buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

@@ -1,29 +1,45 @@
-// App.js
-import React, { useContext, useEffect } from 'react';
-import { NavigationContainer, useNavigation } from '@react-navigation/native';
+// ─── App.js  (project root) ────────────────────────────────────────────────
+
+import React, { useEffect, useState } from 'react';
+import { NavigationContainer }        from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
-import { Text, View } from 'react-native';
+import { createBottomTabNavigator }   from '@react-navigation/bottom-tabs';
+import Ionicons                       from 'react-native-vector-icons/Ionicons';
+import { GoogleSignin }               from '@react-native-google-signin/google-signin';
 
-// Contexts
-import { AuthProvider, AuthContext } from './context/AuthContext';
+
+// Context providers
+import { AuthProvider }    from './context/AuthContext';
 import { ExpenseProvider } from './context/ExpenseContext';
-import { UserProvider, UserContext } from './context/UserContext';
+import { UserProvider }    from './context/UserContext';
 
-// Screens
-import LoginScreen from './screens/LoginScreen';
-import SignupScreen from './screens/SignupScreen';
-import RegisterScreen from './screens/RegisterScreen';
-import HomeScreen from './screens/HomeScreen';
-import HistoryScreen from './screens/HistoryScreen';
-import BudgetScreen from './screens/BudgetScreen';
-import ProfileScreen from './screens/ProfileScreen';
+// Auth screens
+import StartScreen    from './src/screens/StartScreen';
+import LoginScreen    from './src/screens/LoginScreen';
+import SignupScreen   from './src/screens/SignupScreen';
+import RegisterScreen from './src/screens/RegisterScreen';
 
-const Stack = createNativeStackNavigator();
-const Tab = createBottomTabNavigator();
+// App screens (tabs)
+import HomeScreen     from './src/screens/HomeScreen';
+import BudgetScreen   from './src/screens/BudgetScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
 
-// Bottom tab navigator
+const RootStack = createNativeStackNavigator();
+const Tab      = createBottomTabNavigator();
+
+// ─── 1. Auth flow: Start → Login → Signup → Register ─────────────────────
+function AuthStack() {
+  return (
+    <RootStack.Navigator screenOptions={{ headerShown: false }}>
+      <RootStack.Screen name="Start"    component={StartScreen}    />
+      <RootStack.Screen name="Login"    component={LoginScreen}    />
+      <RootStack.Screen name="Signup"   component={SignupScreen}   />
+      <RootStack.Screen name="Register" component={RegisterScreen} />
+    </RootStack.Navigator>
+  );
+}
+
+// ─── 2. MainTabs flow: Home / Budget / Settings ───────────────────────────
 function AppTabs() {
   return (
     <Tab.Navigator
@@ -31,64 +47,64 @@ function AppTabs() {
         headerShown: false,
         tabBarActiveTintColor: '#000',
         tabBarInactiveTintColor: '#888',
-        tabBarIcon: ({ color, size }) => {
+        tabBarIcon: ({ focused, size }) => {
           const icons = {
-            Home: 'home-outline',
-            History: 'time-outline',
-            Budget: 'wallet-outline',
-            Profile: 'person-outline',
+            Home:     focused ? 'home'          : 'home-outline',
+            Budget:   focused ? 'pie-chart'     : 'pie-chart-outline',
+            Settings: focused ? 'settings'      : 'settings-outline',
           };
-          return <Ionicons name={icons[route.name]} size={size} color={color} />;
+          return <Ionicons name={icons[route.name]} size={size} />;
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="History" component={HistoryScreen} />
-      <Tab.Screen name="Budget" component={BudgetScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Home"     component={HomeScreen}   />
+      <Tab.Screen name="Budget"   component={BudgetScreen} />
+      <Tab.Screen name="Settings" component={SettingsScreen}/>
     </Tab.Navigator>
   );
 }
 
-// Redirection logic screen
-function RootRedirect() {
-  const navigation = useNavigation();
-  const { user } = useContext(AuthContext);
-  const { profileExists, loading } = useContext(UserContext);
+// ─── DEV TOGGLE ─────────────────────────────────────────────────────────────
+const DEV_FORCE_START = true; // set to false (or __DEV__) in production
 
-  useEffect(() => {
-    if (loading) return;
-
-    if (!user) {
-      navigation.replace('Login');
-    } else if (!profileExists) {
-      navigation.replace('Register');
-    } else {
-      navigation.replace('AppTabs');
-    }
-  }, [user, profileExists, loading]);
-
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Redirecting...</Text>
-    </View>
-  );
-}
-
-// App component with all providers
+// ─── App root ───────────────────────────────────────────────────────────────
 export default function App() {
+
+
+  const [isSignedIn, setIsSignedIn] = useState(false);
+  const [checking,    setChecking]  = useState(true);
+
+  // Silent check for cached Google user on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const current = await GoogleSignin.getCurrentUser();
+        setIsSignedIn(!!current);
+      } finally {
+        setChecking(false);
+      }
+    })();
+  }, []);
+
+  if (checking) return null; // or a splash screen
+
+  // Decide which flow to show first
+  const initialRoute = isSignedIn && !DEV_FORCE_START
+    ? 'AppTabs'   // user is already signed in → go straight to tabs
+    : 'AuthStack';// otherwise show auth flow
+
   return (
     <AuthProvider>
       <ExpenseProvider>
         <UserProvider>
           <NavigationContainer>
-            <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="RootRedirect">
-              <Stack.Screen name="RootRedirect" component={RootRedirect} />
-              <Stack.Screen name="Login" component={LoginScreen} />
-              <Stack.Screen name="Signup" component={SignupScreen} />
-              <Stack.Screen name="Register" component={RegisterScreen} />
-              <Stack.Screen name="AppTabs" component={AppTabs} />
-            </Stack.Navigator>
+            <RootStack.Navigator
+              screenOptions={{ headerShown: false }}
+              initialRouteName={initialRoute}
+            >
+              <RootStack.Screen name="AuthStack" component={AuthStack} />
+              <RootStack.Screen name="AppTabs"   component={AppTabs}   />
+            </RootStack.Navigator>
           </NavigationContainer>
         </UserProvider>
       </ExpenseProvider>

@@ -16,14 +16,14 @@ import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import HomeScreen from './screens/HomeScreen';
-import HistoryScreen from './screens/HistoryScreen';
+// import HistoryScreen from './screens/HistoryScreen'; // Removed
 import BudgetScreen from './screens/BudgetScreen';
 import ProfileScreen from './screens/ProfileScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Bottom tab navigator
+// Bottom tab navigator (History removed)
 function AppTabs() {
   return (
     <Tab.Navigator
@@ -34,7 +34,6 @@ function AppTabs() {
         tabBarIcon: ({ color, size }) => {
           const icons = {
             Home: 'home-outline',
-            History: 'time-outline',
             Budget: 'wallet-outline',
             Profile: 'person-outline',
           };
@@ -43,7 +42,6 @@ function AppTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="History" component={HistoryScreen} />
       <Tab.Screen name="Budget" component={BudgetScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
